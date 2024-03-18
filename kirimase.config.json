@@ -1,0 +1,18 @@
+{
+  "hasSrc": false,
+  "packages": [
+    "shadcn-ui",
+    "prisma",
+    "clerk",
+    "resend"
+  ],
+  "preferredPackageManager": "yarn",
+  "t3": false,
+  "alias": "@",
+  "analytics": true,
+  "rootPath": "",
+  "componentLib": "shadcn-ui",
+  "orm": "prisma",
+  "driver": "pg",
+  "auth": "clerk"
+}

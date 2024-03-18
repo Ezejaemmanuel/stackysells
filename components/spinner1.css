@@ -1,0 +1,40 @@
+.spinner {
+    width: 28px;
+    /* Reduced from 56px to 28px */
+    height: 28px;
+    /* Reduced from 56px to 28px */
+    display: grid;
+    border: 2.25px solid #ed101000;
+    /* Reduced from 4.5px to 2.25px */
+    border-radius: 50%;
+    border-color: #34772d #ff050500;
+    animation: spinner-e04l1k 1s infinite linear;
+}
+
+.spinner::before,
+.spinner::after {
+    content: "";
+    grid-area: 1/1;
+    margin: 1.1px;
+    /* Reduced from 2.2px to 1.1px */
+    border: inherit;
+    border-radius: 50%;
+}
+
+.spinner::before {
+    border-color: #32ac48 #ca1e1e00;
+    animation: inherit;
+    animation-duration: 0.5s;
+    animation-direction: reverse;
+}
+
+.spinner::after {
+    margin: 4.45px;
+    /* Reduced from 8.9px to 4.45px */
+}
+
+@keyframes spinner-e04l1k {
+    100% {
+        transform: rotate(1turn);
+    }
+}
