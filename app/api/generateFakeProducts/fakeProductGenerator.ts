@@ -13,7 +13,7 @@ export async function createRandomProducts(userId: string) {
   const productTypes = Object.values(ProductType);
   const productStatuses = Object.values(ProductStatus);
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     const product = await prisma.product.create({
       data: {
         title: faker.commerce.productName(),
