@@ -1,7 +1,6 @@
 "use client";
-
-import { Button } from "@/components/ui/button";
-
+import { useState } from "react";
+import { useWindowSize } from "@uidotdev/usehooks";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,8 +9,11 @@ import {
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
+  Row,
 } from "@tanstack/react-table";
-
+import { ProductType, CollectionType } from "./productsColumn"; // Ensure these are imported or defined in this file
+import Link from "next/link";
+import Delete from "./customUi-delete";
 import {
   Table,
   TableBody,
@@ -20,21 +22,77 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
   data: TData[];
   searchKey: string;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
+export function DataTable<TData extends ProductType>({
   data,
   searchKey,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  const { width } = useWindowSize();
+  const isSmallScreen = (width ?? 0) < 768; // Assuming 768px as the breakpoint for small screens
+
+  const columns: ColumnDef<TData, unknown>[] = [
+    {
+      accessorKey: "title",
+      header: () => "Title",
+      cell: ({ row }: { row: Row<TData> }) => (
+        <Link
+          href={`/products/${row.original._id}`}
+          className="hover:text-red-1"
+        >
+          {row.original.title}
+        </Link>
+      ),
+    },
+    isSmallScreen
+      ? null
+      : {
+          accessorKey: "category",
+          header: () => "Category",
+        },
+    isSmallScreen
+      ? null
+      : {
+          accessorKey: "collections",
+          header: () => "Collections",
+          cell: ({ row }: { row: Row<TData> }) =>
+            row.original.collections
+              .map((collection: CollectionType) => collection.title)
+              .join(", "),
+        },
+    {
+      accessorKey: "Status",
+      header: () => "Status",
+      cell: ({ row }: { row: Row<TData> }) => <div>yes</div>,
+    },
+    isSmallScreen
+      ? null
+      : {
+          accessorKey: "price",
+          header: () => "Price ($)",
+        },
+    isSmallScreen
+      ? null
+      : {
+          accessorKey: "expense",
+          header: () => "Expense ($)",
+        },
+    {
+      id: "actions",
+      header: () => "Actions",
+      cell: ({ row }: { row: Row<TData> }) => (
+        <Delete item="product" id={row.original._id} />
+      ),
+    },
+  ].filter(Boolean) as ColumnDef<TData, unknown>[]; // Ensure no null values and assert the correct type
 
   const table = useReactTable({
     data,
@@ -47,7 +105,6 @@ export function DataTable<TData, TValue>({
       columnFilters,
     },
   });
-
   return (
     <div className="py-5">
       <div className="flex items-center py-4">
@@ -73,7 +130,7 @@ export function DataTable<TData, TValue>({
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -92,7 +149,7 @@ export function DataTable<TData, TValue>({
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}

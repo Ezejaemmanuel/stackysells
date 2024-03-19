@@ -5,7 +5,11 @@ import { faker } from "@faker-js/faker";
 import { formatISO } from "date-fns";
 import { formatCurrencyNaira } from "@/lib/formatCurrency";
 import SalesChart from "./_components/chart";
-export default function Home() {
+import "./custom-button.css";
+import { checkAuth, getUserAuth } from "@/lib/auth/utils";
+import Link from "next/link";
+export default async function Home() {
+  await checkAuth();
   // Generate fake data using Faker.js
   const totalRevenue = faker.finance.amount({
     min: 100000,
@@ -22,13 +26,18 @@ export default function Home() {
   }));
 
   return (
-    <div className="px-8 py-10 bg-black text-neutral-200">
-      <p className="text-heading2-bold">Dashboard</p>
-      <Separator className="bg-neutral-700 my-5" />
+    <div className="bg-black py-10 text-neutral-200 md:px-8">
+      <div className="flex flex-row justify-between">
+        <p className="text-heading2-bold">Dashboard</p>
+        <button className="custom-btn-1 bg-white">
+          <Link href={"/adminDashboards/allProducts"}>Products</Link>
+        </button>
+      </div>
+      <Separator className="my-5 bg-neutral-700" />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
+      <div className="grid grid-cols-2 gap-10 md:grid-cols-3">
         <Card className="bg-natural-900">
-          <CardHeader className="flex flex-row justify-between items-center text-neutral-300">
+          <CardHeader className="flex flex-row items-center justify-between text-neutral-300">
             <CardTitle>Total Revenue</CardTitle>
             <CircleDollarSign className="max-sm:hidden" />
           </CardHeader>
@@ -38,7 +47,7 @@ export default function Home() {
         </Card>
 
         <Card className="bg-natural-900">
-          <CardHeader className="flex flex-row justify-between items-center text-neutral-300">
+          <CardHeader className="flex flex-row items-center justify-between text-neutral-300">
             <CardTitle>Total Orders</CardTitle>
             <ShoppingBag className="max-sm:hidden" />
           </CardHeader>
@@ -48,7 +57,7 @@ export default function Home() {
         </Card>
 
         <Card className="bg-natural-900">
-          <CardHeader className="flex flex-row justify-between items-center text-neutral-300">
+          <CardHeader className="flex flex-row items-center justify-between text-neutral-300">
             <CardTitle>Total Customer</CardTitle>
             <UserRound className="max-sm:hidden" />
           </CardHeader>
@@ -58,7 +67,7 @@ export default function Home() {
         </Card>
       </div>
 
-      <Card className="mt-10 bg-natural-900">
+      <Card className="bg-natural-900 mt-10">
         <CardHeader>
           <CardTitle>Sales Chart ($)</CardTitle>
         </CardHeader>

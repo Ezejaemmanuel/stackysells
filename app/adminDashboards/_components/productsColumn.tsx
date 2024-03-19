@@ -3,7 +3,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import Delete from "./customUi-delete";
 
-interface CollectionType {
+export interface CollectionType {
   _id: string;
   title: string;
   description: string;
@@ -11,7 +11,7 @@ interface CollectionType {
   products: ProductType[];
 }
 
-interface ProductType {
+export interface ProductType {
   _id: string;
   title: string;
   description: string;
@@ -48,9 +48,15 @@ export const columns: ColumnDef<ProductType, unknown>[] = [
       row.original.collections.map((collection) => collection.title).join(", "),
   },
   {
+    accessorKey: "Status",
+    header: () => "Status",
+    cell: ({ row }) => <div>yes</div>,
+  },
+  {
     accessorKey: "price",
     header: () => "Price ($)",
   },
+
   {
     accessorKey: "expense",
     header: () => "Expense ($)",

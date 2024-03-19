@@ -22,14 +22,14 @@ const Menus: Menu[] = [
     href: "/user-dashboard",
   },
   {
-    name: "Chat",
+    name: "AdminDashboards",
     icon: <MdChatBubbleOutline className="text-xl " />,
-    href: "/user-dashboard/chat",
+    href: "/AdminDashboards",
   },
   {
-    name: "Notification",
+    name: "AllProducts",
     icon: <MdNotifications className="text-xl " />,
-    href: "/user-dashboard/notification",
+    href: "/AdminDashboards/allProducts",
   },
   {
     name: "Profile",
@@ -64,13 +64,13 @@ export default function MobileNav() {
                   isRouteActive(menu.href),
                 "text-gray-400 hover:text-gray-900 dark:text-gray-600 dark:hover:text-gray-50":
                   !isRouteActive(menu.href),
-              }
+              },
             )}
           >
             <div
               className={cn(
                 "flex flex-col items-center justify-center  text-xs font-medium transition-colors",
-                { "text-rose-500": isRouteActive(menu.href) }
+                { "text-rose-500": isRouteActive(menu.href) },
               )}
             >
               {menu.icon}

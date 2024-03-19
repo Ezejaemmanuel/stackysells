@@ -1,26 +1,68 @@
-import { auth } from "@clerk/nextjs/server";
+// import { auth } from "@clerk/nextjs/server";
+// import { redirect } from "next/navigation";
+
+// export type AuthSession = {
+//   session: {
+//     user: {
+//       id: string;
+//       name?: string;
+//       email?: string;
+//     };
+//   } | null;
+// };
+
+// export const getUserAuth = async () => {
+//   // find out more about setting up 'sessionClaims' (custom sessions) here: https://clerk.com/docs/backend-requests/making/custom-session-token
+//   const { userId, sessionClaims } = auth();
+//   if (userId) {
+//     return {
+//       session: {
+//         user: {
+//           id: userId,
+//           name: `${sessionClaims?.firstName} ${sessionClaims?.lastName}`,
+//           email: sessionClaims?.email,
+//         },
+//       },
+//     } as AuthSession;
+//   } else {
+//     return { session: null };
+//   }
+// };
+
+// export const checkAuth = async () => {
+//   const { userId } = auth();
+//   if (!userId) redirect("/sign-in");
+// };
+
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { redirect } from "next/navigation";
 
 export type AuthSession = {
   session: {
     user: {
       id: string;
-      name?: string;
+      userName?: string;
+      firstName?: string;
+      fullName?: string;
       email?: string;
     };
   } | null;
 };
 
 export const getUserAuth = async () => {
-  // find out more about setting up 'sessionClaims' (custom sessions) here: https://clerk.com/docs/backend-requests/making/custom-session-token
-  const { userId, sessionClaims } = auth();
-  if (userId) {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+  console.log("this is the kinde user properly", user);
+
+  if (user) {
     return {
       session: {
         user: {
-          id: userId,
-          name: `${sessionClaims?.firstName} ${sessionClaims?.lastName}`,
-          email: sessionClaims?.email,
+          id: user.id,
+          userName: user.given_name,
+          firstName:user.family_name,
+          fullName: `${user.given_name} ${user.family_name}`,
+          email: user.email,
         },
       },
     } as AuthSession;
@@ -30,6 +72,6 @@ export const getUserAuth = async () => {
 };
 
 export const checkAuth = async () => {
-  const { userId } = auth();
-  if (!userId) redirect("/sign-in");
+  const { session } = await getUserAuth();
+  if (session === null) redirect("/api/auth/login");
 };

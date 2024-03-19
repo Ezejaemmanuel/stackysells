@@ -10,7 +10,9 @@ import {
   UsersIcon,
 } from "@heroicons/react/24/outline";
 import ProjectLink from "./ProjectLink";
-import ProjectNavigation from "./ProjectNavigation";
+// import ProjectNavigation from "./ProjectNavigation";
+import { FaHome, FaProductHunt } from "react-icons/fa";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 const containerVariants = {
   close: {
@@ -99,19 +101,22 @@ const Navigation = () => {
           </button>
         </div>
         <div className="flex flex-col gap-3">
-          <NavigationLink name="Dashboard">
-            <ChartBarIcon className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
+          <NavigationLink name="Home" href={"/"}>
+            <FaHome className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
           </NavigationLink>
-          <NavigationLink name="Projects">
-            <Square2StackIcon className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
+          <NavigationLink name="Admin Dashboard" href={"/adminDashboards"}>
+            <MdAdminPanelSettings className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
           </NavigationLink>
-          <NavigationLink name="Tasks">
-            <DocumentCheckIcon className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
+          <NavigationLink
+            name="AllProducts"
+            href={"/adminDashboards/allProducts"}
+          >
+            <FaProductHunt className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
           </NavigationLink>
-          <NavigationLink name="Reporting">
+          <NavigationLink name="Reporting" href={""}>
             <ChartPieIcon className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
           </NavigationLink>
-          <NavigationLink name="Users">
+          <NavigationLink name="Users" href={""}>
             <UsersIcon className="stroke-inherit stroke-[0.75] md:min-w-6 md:w-6 min-w-4 w-4 text-orange-600" />
           </NavigationLink>
         </div>
@@ -139,7 +144,7 @@ const Navigation = () => {
           </ProjectLink>
         </div>
       </motion.nav>
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {selectedProject && (
           <ProjectNavigation
             selectedProject={selectedProject}
@@ -147,7 +152,7 @@ const Navigation = () => {
             isOpen={isOpen}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </>
   );
 };

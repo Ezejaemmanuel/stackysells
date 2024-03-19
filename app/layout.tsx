@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Sidebar } from "lucide-react";
 import Navbar from "@/components/newNavbar";
 import ReactGeiger from "./geiger";
@@ -29,13 +28,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ClerkProvider>
-              <main className="">
-                <Navbar />
-                {children}
-                <Toaster />
-              </main>
-            </ClerkProvider>
+            <main className="">
+              <Navbar />
+              {children}
+              <Toaster />
+            </main>
 
             <Toaster richColors />
           </ThemeProvider>

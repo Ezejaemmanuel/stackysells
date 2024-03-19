@@ -9,8 +9,8 @@ import { faker } from "@faker-js/faker";
 import Loader from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DataTable } from "./_components/DataTable";
-import { columns } from "./_components/productsColumn";
+import { DataTable } from "../_components/DataTable";
+import { columns } from "../_components/productsColumn";
 
 interface CollectionType {
   _id: string;
@@ -52,11 +52,10 @@ console.log(randomColors);
 const Products = () => {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductType[]>([]);
 
-  const simulateLoading = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+  // const simulateLoading = (ms: number) =>
+  //   new Promise((resolve) => setTimeout(resolve, ms));
 
   const generateFakeCollection = (): CollectionType => ({
     _id: faker.datatype.uuid(),
@@ -72,16 +71,16 @@ const Products = () => {
     description: faker.commerce.productDescription(),
     media: Array.from(
       { length: faker.datatype.number({ min: 1, max: 3 }) },
-      () => faker.image.imageUrl()
+      () => faker.image.imageUrl(),
     ),
     category: faker.commerce.department(),
     collections: Array.from(
       { length: faker.datatype.number({ min: 1, max: 3 }) },
-      generateFakeCollection
+      generateFakeCollection,
     ),
     tags: Array.from(
       { length: faker.datatype.number({ min: 1, max: 5 }) },
-      () => faker.commerce.productAdjective()
+      () => faker.commerce.productAdjective(),
     ),
     sizes: ["S", "M", "L", "XL"],
     colors: getRandomColors(),
@@ -93,10 +92,9 @@ const Products = () => {
 
   const getProducts = async () => {
     try {
-      await simulateLoading(4000); // Simulate loading for 2 seconds
+      // await simulateLoading(4000); // Simulate loading for 2 seconds
       const fakeProducts = Array.from({ length: 100 }, generateFakeProduct); // Generate 10 fake products
       setProducts(fakeProducts);
-      setLoading(false);
     } catch (err) {
       console.error("[products_GET]", err);
     }
@@ -106,24 +104,20 @@ const Products = () => {
     getProducts();
   }, []);
 
-  return loading ? (
-    <div className="container">
-      <Loader />
-    </div>
-  ) : (
-    <div className="px-10 py-5 bg-black">
+  return (
+    <div className="bg-black px-1 py-5 md:px-10">
       <div className="flex items-center justify-between">
-        <p className=" font-extrabold text-xl text-white">Products</p>
+        <p className=" text-xl font-extrabold text-white">Products</p>
         <Button
-          className="bg-blue-1 hover:bg-orange-500 text-white font-medium"
-          onClick={() => router.push("/products/new")}
+          className="bg-blue-1 bg-orange-500 font-medium text-white"
+          onClick={() => router.push("/adminDashboards/newProduct")}
         >
-          <Plus className="h-4 w-4 mr-2 text-white " />
+          <Plus className="mr-2 h-4 w-4 text-white " />
           Create Product
         </Button>
       </div>
-      <Separator className="bg-neutral-900 my-4" />
-      <DataTable columns={columns} data={products} searchKey="title" />
+      <Separator className="my-4 bg-neutral-900" />
+      <DataTable data={products} searchKey="title" />
     </div>
   );
 };

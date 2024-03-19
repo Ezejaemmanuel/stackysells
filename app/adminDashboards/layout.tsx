@@ -15,7 +15,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="">
       <Navigation />
-      <main className="ml-20 mt-10">{children}</main>
+      <main className="md:ml-20 mt-10">{children}</main>
       <MobileNav />
     </div>
   );
