@@ -44,6 +44,7 @@ export type AuthSession = {
       userName?: string;
       firstName?: string;
       fullName?: string;
+      imageUrl?: string;
       email?: string;
     };
   } | null;
@@ -60,8 +61,9 @@ export const getUserAuth = async () => {
         user: {
           id: user.id,
           userName: user.given_name,
-          firstName:user.family_name,
+          firstName: user.family_name,
           fullName: `${user.given_name} ${user.family_name}`,
+          imageUrl: user.picture,
           email: user.email,
         },
       },

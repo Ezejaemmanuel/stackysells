@@ -33,6 +33,21 @@ enum UserRole {
   SuperAdmin
 }
 
+model User {
+  id        String    @id @unique @default(cuid())
+  userName  String?
+  firstName String?
+  fullName  String?
+  email     String    @unique
+  imageUrl  String?
+  role      UserRole
+  wishlist  Product[] @relation("Wishlist")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Order     Order[]
+  Products  Product[]
+}
+
 model Product {
   id                 String            @id @unique @default(cuid())
   title              String
@@ -50,8 +65,10 @@ model Product {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   OrderItem          OrderItem[]
-  userId             String // Foreign key for User
-  User               User              @relation(fields: [userId], references: [id]) // Relation to User
+  userId             String
+  User               User              @relation(fields: [userId], references: [id])
+  wishlistedBy       User?             @relation("Wishlist", fields: [wishlistedById], references: [id])
+  wishlistedById     String?
 }
 
 enum ProductStatus {
@@ -67,19 +84,6 @@ enum ProductStatus {
 enum ProductType {
   goods
   services
-}
-
-model User {
-  id        String    @id @unique @default(cuid())
-  userName  String?
-  firstName String?
-  email     String    @unique
-  role      UserRole
-  wishlist  String[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Order     Order[]
-  Products  Product[] // Relation to Product
 }
 
 model Order {
