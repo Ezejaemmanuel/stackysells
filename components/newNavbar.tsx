@@ -1,12 +1,61 @@
 "use client";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import Link from "next/link";
+import { Button } from "./ui/button";
+import {
+  RegisterLink,
+  LoginLink,
+} from "@kinde-oss/kinde-auth-nextjs/components";
+import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
+
 export const navItems = [
   { label: "Features", href: "#" },
   { label: "Workflow", href: "#" },
   { label: "Pricing", href: "#" },
   { label: "Testimonials", href: "#" },
 ];
+
+const AuthButtons = () => {
+  const { user, isAuthenticated, isLoading } = useKindeBrowserClient();
+  // const [userData, setUserData] = useState<KindeUser | null>(null);
+  // const [isUserAuthenticated, setIsUserAuthenticated] = useState<
+  //   boolean | null
+  // >(null);
+
+  // useEffect(() => {
+  //   if (!isLoading) {
+  //     setUserData(user);
+  //     setIsUserAuthenticated(isAuthenticated);
+  //   }
+  // }, [isAuthenticated, isLoading]);
+
+  // console.log("is he authenticated ", isUserAuthenticated);
+  console.log("this is the user", user);
+
+  return (
+    <>
+      {isAuthenticated ? (
+        <Link href="/dashboard" className="rounded-md border px-3 py-2">
+          Dashboard
+        </Link>
+      ) : (
+        <>
+          <LoginLink postLoginRedirectURL="/sync-user">
+            <Button className="rounded-md border px-3 py-2">Sign In</Button>
+          </LoginLink>
+          <RegisterLink
+            postLoginRedirectURL="/sync-user"
+            className="rounded-md bg-gradient-to-r from-orange-500 to-orange-800 px-3 py-2"
+          >
+            Create an account
+          </RegisterLink>
+        </>
+      )}
+    </>
+  );
+};
 
 const Navbar = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -16,57 +65,41 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 py-3 backdrop-blur-lg border-b border-neutral-700/80">
-      <div className="container px-4 mx-auto relative lg:text-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center flex-shrink-0">
+    <nav className="sticky top-0 z-50 border-b border-neutral-700/80 py-3 backdrop-blur-lg">
+      <div className="container relative mx-auto px-4 lg:text-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-shrink-0 items-center">
             {/* <img className="h-10 w-10 mr-2" src={logo} alt="Logo" /> */}
-            <span className="text-sm mr-2">Logo </span>
+            <span className="mr-2 text-sm">Logo </span>
             <span className="text-xl tracking-tight">VirtualR</span>
           </div>
-          <ul className="hidden lg:flex ml-14 space-x-12">
+          <ul className="ml-14 hidden space-x-12 lg:flex">
             {navItems.map((item, index) => (
               <li key={index}>
-                <a href={item.href}>{item.label}</a>
+                <Link href={item.href}>{item.label}</Link>
               </li>
             ))}
           </ul>
-          <div className="hidden lg:flex justify-center space-x-12 items-center">
-            <a href="#" className="py-2 px-3 border rounded-md">
-              Sign In
-            </a>
-            <a
-              href="#"
-              className="bg-gradient-to-r from-orange-500 to-orange-800 py-2 px-3 rounded-md"
-            >
-              Create an account
-            </a>
+          <div className="hidden items-center justify-center space-x-12 lg:flex">
+            <AuthButtons />
           </div>
-          <div className="lg:hidden md:flex flex-col justify-end">
+          <div className="flex-col justify-end md:flex lg:hidden">
             <button onClick={toggleNavbar}>
               {mobileDrawerOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
         {mobileDrawerOpen && (
-          <div className="fixed right-0 z-20 bg-neutral-900 w-full p-12 flex flex-col justify-center items-center lg:hidden">
+          <div className="fixed right-0 z-20 flex w-full flex-col items-center justify-center bg-neutral-900 p-12 lg:hidden">
             <ul>
               {navItems.map((item, index) => (
                 <li key={index} className="py-4">
-                  <a href={item.href}>{item.label}</a>
+                  <Link href={item.href}>{item.label}</Link>
                 </li>
               ))}
             </ul>
             <div className="flex space-x-6">
-              <a href="#" className="py-2 px-3 border rounded-md">
-                Sign In
-              </a>
-              <a
-                href="#"
-                className="py-2 px-3 rounded-md bg-gradient-to-r from-orange-500 to-orange-800"
-              >
-                Create an account
-              </a>
+              <AuthButtons />
             </div>
           </div>
         )}
@@ -76,94 +109,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-// "use client";
-// import { Menu, X } from "lucide-react";
-// import { useState } from "react";
-
-// export const navItems = [
-//   { label: "Features", href: "#" },
-//   { label: "Workflow", href: "#" },
-//   { label: "Pricing", href: "#" },
-//   { label: "Testimonials", href: "#" },
-// ];
-
-// const Navbar = () => {
-//   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-
-//   const toggleNavbar = () => {
-//     setMobileDrawerOpen(!mobileDrawerOpen);
-//   };
-
-//   return (
-//     <nav className="sticky top-0 z-50 py-3 backdrop-blur-lg border-b border-neutral-700/80 dark:border-gray-800">
-//       <div className="container px-4 mx-auto relative lg:text-sm">
-//         <div className="flex justify-between items-center">
-//           <div className="flex items-center flex-shrink-0">
-//             <span className="h-10 w-10 mr-2">Logo Image</span>
-//             <span className="text-xl tracking-tight dark:text-white">
-//               VirtualR
-//             </span>
-//           </div>
-//           <ul className="hidden lg:flex ml-14 space-x-12">
-//             {navItems.map((item, index) => (
-//               <li key={index}>
-//                 <a href={item.href} className="dark:text-white">
-//                   {item.label}
-//                 </a>
-//               </li>
-//             ))}
-//           </ul>
-//           <div className="hidden lg:flex justify-center space-x-12 items-center">
-//             <a
-//               href="#"
-//               className="py-2 px-3 border rounded-md dark:border-gray-500"
-//             >
-//               Sign In
-//             </a>
-//             <a
-//               href="#"
-//               className="bg-gradient-to-r from-orange-500 to-orange-800 py-2 px-3 rounded-md dark:from-orange-300 dark:to-orange-500"
-//             >
-//               Create an account
-//             </a>
-//           </div>
-//           <div className="lg:hidden md:flex flex-col justify-end">
-//             <button onClick={toggleNavbar}>
-//               {mobileDrawerOpen ? <X /> : <Menu />}
-//             </button>
-//           </div>
-//         </div>
-//         {mobileDrawerOpen && (
-//           <div className="fixed right-0 z-20 bg-neutral-900 w-full p-12 flex flex-col justify-center items-center lg:hidden">
-//             <ul>
-//               {navItems.map((item, index) => (
-//                 <li key={index} className="py-4">
-//                   <a href={item.href} className="dark:text-white">
-//                     {item.label}
-//                   </a>
-//                 </li>
-//               ))}
-//             </ul>
-//             <div className="flex space-x-6">
-//               <a
-//                 href="#"
-//                 className="py-2 px-3 border rounded-md dark:border-gray-500"
-//               >
-//                 Sign In
-//               </a>
-//               <a
-//                 href="#"
-//                 className="py-2 px-3 rounded-md bg-gradient-to-r from-orange-500 to-orange-800 dark:from-orange-300 dark:to-orange-500"
-//               >
-//                 Create an account
-//               </a>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default Navbar;

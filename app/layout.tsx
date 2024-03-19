@@ -6,6 +6,7 @@ import { Sidebar } from "lucide-react";
 import Navbar from "@/components/newNavbar";
 import ReactGeiger from "./geiger";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "./tenstack-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -28,11 +29,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <main className="">
-              <Navbar />
-              {children}
-              <Toaster />
-            </main>
+            <Providers>
+              <main className="">
+                <Navbar />
+                {children}
+                <Toaster />
+              </main>
+            </Providers>
 
             <Toaster richColors />
           </ThemeProvider>

@@ -1,11 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id        String    @id @unique @default(cuid())
+  role      UserRole
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  email     String    @unique
+  firstName String?
+  userName  String?
+  fullName  String?
+  imageUrl  String?
+  Order     Order[]
+  Products  Product[]
+  wishlist  Product[] @relation("Wishlist")
+}
+
+model Product {
+  id                 String            @id @unique @default(cuid())
+  title              String
+  description        String
+  category           ProductCategory
+  tags               String[]
+  price              Float
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  imagesUrl          String[]
+  userId             String
+  videoUrl           String[]
+  categories         ProductCategory[]
+  discountPercentage Float
+  jsonDetails        Json[]
+  productType        ProductType
+  status             ProductStatus
+  wishlistedById     String?
+  OrderItem          OrderItem[]
+  User               User              @relation(fields: [userId], references: [id])
+  wishlistedBy       User?             @relation("Wishlist", fields: [wishlistedById], references: [id])
+}
+
+model Order {
+  id              String      @id @unique @default(cuid())
+  shippingAddress Json
+  userId          String
+  shippingRate    String
+  totalAmount     Float
+  User            User        @relation(fields: [userId], references: [id])
+  products        OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @unique @default(cuid())
+  productId String
+  color     String
+  size      String
+  quantity  Int
+  orderId   String?
+  Order     Order?  @relation(fields: [orderId], references: [id])
+  Product   Product @relation(fields: [productId], references: [id])
 }
 
 enum ProductCategory {
@@ -33,44 +92,6 @@ enum UserRole {
   SuperAdmin
 }
 
-model User {
-  id        String    @id @unique @default(cuid())
-  userName  String?
-  firstName String?
-  fullName  String?
-  email     String    @unique
-  imageUrl  String?
-  role      UserRole
-  wishlist  Product[] @relation("Wishlist")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Order     Order[]
-  Products  Product[]
-}
-
-model Product {
-  id                 String            @id @unique @default(cuid())
-  title              String
-  description        String
-  imagesUrl          String[]
-  videoUrl           String[]
-  category           ProductCategory
-  categories         ProductCategory[]
-  tags               String[]
-  price              Float
-  discountPercentage Float
-  productType        ProductType
-  jsonDetails        Json[]
-  status             ProductStatus
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  OrderItem          OrderItem[]
-  userId             String
-  User               User              @relation(fields: [userId], references: [id])
-  wishlistedBy       User?             @relation("Wishlist", fields: [wishlistedById], references: [id])
-  wishlistedById     String?
-}
-
 enum ProductStatus {
   justCreated
   beingReviewed
@@ -84,25 +105,4 @@ enum ProductStatus {
 enum ProductType {
   goods
   services
-}
-
-model Order {
-  id              String      @id @unique @default(cuid())
-  shippingAddress Json
-  userId          String
-  products        OrderItem[]
-  shippingRate    String
-  totalAmount     Float
-  User            User        @relation(fields: [userId], references: [id])
-}
-
-model OrderItem {
-  id        String  @id @unique @default(cuid())
-  productId String
-  color     String
-  size      String
-  quantity  Int
-  Product   Product @relation(fields: [productId], references: [id])
-  Order     Order?  @relation(fields: [orderId], references: [id])
-  orderId   String?
 }

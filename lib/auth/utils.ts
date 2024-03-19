@@ -75,5 +75,6 @@ export const getUserAuth = async () => {
 
 export const checkAuth = async () => {
   const { session } = await getUserAuth();
+  console.log("see the user data ", session);
   if (session === null) redirect("/api/auth/login");
 };

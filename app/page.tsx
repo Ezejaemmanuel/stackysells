@@ -3,12 +3,14 @@ import Loader from "@/components/loader";
 import SearchAnimation from "@/components/search";
 import WhatIsStackItSells from "@/components/what-is-stack-it-sells";
 import Workflow from "@/components/why-you-should-use-stackitsells";
+import { checkAuth } from "@/lib/auth/utils";
 import Image from "next/image";
 
-export default function Home() {
+export default async function Home() {
+  // await checkAuth();
   return (
     <>
-      <div className="max-w-7xl container mx-auto pt-20 px-6">
+      <div className="container mx-auto max-w-7xl px-6 pt-20">
         <HeroSection />
         <WhatIsStackItSells />
         <SearchAnimation />

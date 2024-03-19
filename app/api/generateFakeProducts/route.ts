@@ -3,16 +3,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createRandomProducts } from "./fakeProductGenerator";
+import { getUserAuth } from "@/lib/auth/utils";
 
 interface Params {
   userId: string;
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
+  const { session } = await getUserAuth();
 
-  if (!userId) {
+  if (!session) {
     return NextResponse.json(
       { error: "User ID is required." },
       { status: 400 },
@@ -21,14 +21,14 @@ export async function GET(request: Request) {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.user.id },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    await createRandomProducts(userId);
+    await createRandomProducts(user.id);
 
     return NextResponse.json({
       message: "Random products generated successfully.",
