@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getUserAuth } from "@/lib/auth/utils";
+import { UserRole } from "@prisma/client";
 
 export async function createUser() {
   const { session } = await getUserAuth();
@@ -20,23 +21,15 @@ export async function createUser() {
       fullName: user.fullName,
       email: user.email,
       imageUrl: user.imageUrl,
-      createdAt: new Date(user.createdAt),
-      updatedAt: new Date(user.updatedAt),
-      banned: user.banned,
-      emailAddresses: JSON.stringify(user.emailAddresses),
-      phoneNumbers: JSON.stringify(user.phoneNumbers),
-      primaryEmailAddressId: user.primaryEmailAddressId,
+      role: UserRole.Buyer,
     },
     update: {
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      username: user.username,
-      email:
-        user.emailAddresses.find(
-          (email) => email.id === user.primaryEmailAddressId,
-        )?.emailAddress || "",
+      id: user.id,
+      userName: user.userName,
+      firstName: user.firstName,
+      fullName: user.fullName,
+      email: user.email,
       imageUrl: user.imageUrl,
-      updatedAt: new Date(),
     },
   });
 
