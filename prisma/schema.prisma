@@ -32,18 +32,26 @@ model Product {
   price              Float
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
-  imagesUrl          String[]
   userId             String
   videoUrl           String[]
   categories         ProductCategory[]
   discountPercentage Float
   jsonDetails        Json[]
+  productOwner       ProductOwner
   productType        ProductType
   status             ProductStatus
   wishlistedById     String?
   OrderItem          OrderItem[]
   User               User              @relation(fields: [userId], references: [id])
   wishlistedBy       User?             @relation("Wishlist", fields: [wishlistedById], references: [id])
+  images             ProductImage[]
+}
+
+model ProductImage {
+  id        String  @id @unique
+  url       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -93,16 +101,20 @@ enum UserRole {
 }
 
 enum ProductStatus {
-  justCreated
-  beingReviewed
-  confirmedAndAvailbleForBuy
-  notConfirmedButAvailableForBuy
-  beingSoldInProgress
+  created
+  onSale
   soldOut
+  suspendedByAdmin
+  suspendedBySeller
   shouldBeDeleted
 }
 
 enum ProductType {
   goods
   services
+}
+
+enum ProductOwner {
+  admin
+  permanentSellers
 }

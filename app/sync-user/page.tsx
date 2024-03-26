@@ -34,7 +34,7 @@ const CalculateResult = () => {
       return response.json();
     },
     onSuccess: () => {
-      router.push("/user-dashboard");
+      router.push("/");
     },
   });
 

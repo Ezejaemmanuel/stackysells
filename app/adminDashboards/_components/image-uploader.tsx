@@ -261,17 +261,26 @@ import {
   AlertDialogOverlay,
 } from "@/components/ui/alert-dialog";
 import Loader from "@/components/loader";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { addProductImage } from "@/lib/uploadthing-functions/functions";
+
+interface ImageData {
+  url: string;
+  id: string;
+}
 
 interface ImageUploadProps {
-  value: string[];
-  onChange: (value: string) => void;
-  onRemove: (value: string) => void;
+  value: ImageData[];
+  id: string;
+  onChange: (value: ImageData) => void;
+  onRemove: (value: ImageData) => void;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   onChange,
   onRemove,
   value,
+  id,
 }) => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
@@ -319,12 +328,27 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     },
     async onClientUploadComplete(res) {
       if (res) {
-        onChange(res[0].url);
+        onChange({ url: res[0].url, id: res[0].key });
+
+        toast.promise(
+          addProductImage({ url: res[0].url, id: res[0].key }, id),
+          {
+            loading: "Syncing to the database",
+            success: (result) => {
+              return "Successfully synced to the database";
+            },
+            error: (error) => {
+              return "Unable to sync image to the database";
+            },
+          },
+        );
         setIsButtonDisabled(false);
       }
     },
     onUploadError(res) {
-      toast.error("Upload failed");
+      toast.error(`upload error code ${res.code}: ${res.cause} `, {
+        duration: 10000,
+      });
       setIsButtonDisabled(false);
     },
   });
@@ -332,12 +356,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-4">
-        {value.map((url) => (
-          <div key={url} className="relative h-[200px] w-[200px]">
+        {(value || []).map((imageData) => (
+          <div key={imageData.id} className="relative h-[200px] w-[200px]">
             <div className="absolute right-0 top-0 z-10">
               <Button
                 type="button"
-                onClick={() => onRemove(url)}
+                onClick={() => onRemove(imageData)}
                 size="sm"
                 className="bg-red-1 text-white"
               >
@@ -345,7 +369,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               </Button>
             </div>
             <NextImage
-              src={url}
+              src={imageData.url}
               alt="collection"
               className="rounded-lg object-cover"
               height={200}
@@ -357,22 +381,23 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       <div className="cursor-pointer">
         <input {...getInputProps()} />
-        <Button
+        <LoadingButton
+          loading={isUploading}
           type="button"
           {...getRootProps()}
           className="bg-grey-1 text-white"
-          disabled={isButtonDisabled}
+          disabled={isButtonDisabled || isUploading}
         >
           <Plus className="mr-2 h-4 w-4" />
-          Upload Image
-        </Button>
+          {isUploading ? "Uploading..." : "Upload Image"}
+        </LoadingButton>
       </div>
 
-      <AlertDialog open={isUploading}>
+      {/* <AlertDialog open={isUploading}>
         <AlertDialogContent className="bg-transparent ">
           <Loader />
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   );
 };

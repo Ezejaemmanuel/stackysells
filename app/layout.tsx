@@ -32,8 +32,8 @@ export default function RootLayout({
             <Providers>
               <main className="">
                 <Navbar />
-                {children}
-                <Toaster />
+                <div className="mb-10 md:mb-0">{children}</div>
+                <Toaster richColors duration={10000} />
               </main>
             </Providers>
 

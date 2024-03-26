@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,13 @@ import { useEffect, useState } from "react";
 import ImageUpload from "./image-uploader";
 // import MultiSelect from "./multi-select";
 import MultiText from "./multi-text";
-import Delete from "./customUi-delete";
-import { Product, ProductCategory, ProductStatus, ProductType } from "@prisma/client";
+// import Delete from "./customUi-delete";
+import {
+  Product,
+  ProductCategory,
+  ProductStatus,
+  ProductType,
+} from "@prisma/client";
 import {
   Select,
   SelectContent,
@@ -35,6 +40,11 @@ import MultipleSelector from "@/components/ui/multipleSelector";
 import { AutosizeTextarea } from "@/components/ui/autoResizeTextArea";
 import { Section, useJsonDetailsStore } from "@/lib/zustandStore";
 import { DeleteIcon } from "lucide-react";
+import { useCreateProduct } from "@/lib/tenstack-hooks/useCreateProduct";
+import { toast } from "sonner";
+import { DrawerDialogLoader } from "@/components/custom-component/loading-drawer-alert";
+import { deleteProductImageAndFile } from "@/lib/uploadthing-functions/functions";
+import { cn } from "@/lib/utils";
 type Option = {
   label: string;
   value: string;
@@ -43,32 +53,15 @@ type Option = {
 const MEDIA_STORAGE_KEY = "media";
 type MediaUrl = string;
 
-function getMediaFromStorage(): MediaUrl[] {
-  const data = localStorage.getItem(MEDIA_STORAGE_KEY);
-  if (data) {
-    try {
-      const parsedData: MediaUrl[] = JSON.parse(data);
-      return parsedData;
-    } catch (error) {
-      console.error("Failed to parse media URLs from localStorage", error);
-      return [];
-    }
-  }
-  return [];
-}
-
-function setMediaInStorage(mediaUrls: MediaUrl[]): void {
-  localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(mediaUrls));
-}
-
-function clearMediaFromStorage(): void {
-  localStorage.removeItem(MEDIA_STORAGE_KEY);
+export interface ImageData {
+  url: string;
+  id: string;
 }
 
 const formSchema = z.object({
-  title: z.string().min(2).max(20),
+  title: z.string().min(2).max(80),
   description: z.string().min(2).max(500).trim(),
-  imagesUrl: z.array(z.string()),
+  images: z.array(z.object({ url: z.string(), id: z.string() })),
   category: z.nativeEnum(ProductCategory),
   categories: z.array(z.nativeEnum(ProductCategory)),
   tags: z.array(z.string()),
@@ -98,7 +91,7 @@ const initialDataJsonDetails: Section[] = [
 ];
 
 interface ProductFormProps {
-  initialData?: Product | null;
+  initialData: Product | null;
 }
 const productCategories = Object.values(ProductCategory);
 const options: Option[] = productCategories.map((category) => ({
@@ -119,17 +112,21 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
   console.log("sections..this is the sections", sections);
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [reachedMaxLimit, setReachedMaxLimit] = useState(false);
+  const createProductMutation = useCreateProduct();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "noId";
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData
       ? {
           ...initialData,
+          jsonDetails: initialData.jsonDetails as unknown as Section[],
         }
       : {
           title: "",
-        description: "",
-          status:ProductStatus.justCreated,
-          imagesUrl: getMediaFromStorage(),
+          description: "",
+          status: ProductStatus.created,
           category: ProductCategory.Clothing,
           categories: [],
           tags: [],
@@ -141,21 +138,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
   });
   const { setSections } = useJsonDetailsStore();
 
-  //   useEffect(() => {
-  //     if (initialData?.jsonDetails) {
-  //   const parsedJsonDetails = JSON.parse(
-  //     initialData.jsonDetails as unknown as string,
-  //   );
-  //   setSections(parsedJsonDetails);
-  //     }
-  //   }, [initialData, setSections]);
-
-  //as a test purpose
   useEffect(() => {
     if (initialData?.jsonDetails) {
-      const parsedJsonDetails = JSON.parse(
-        initialData.jsonDetails as unknown as string,
-      );
+      const parsedJsonDetails = initialData.jsonDetails as unknown as Section[];
       setSections(parsedJsonDetails);
     } else {
       // Use the example initialDataJsonDetails for testing purposes
@@ -164,8 +149,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
   }, [initialData, setSections]);
 
   useEffect(() => {
-    localStorage.setItem("media", JSON.stringify(form.watch("imagesUrl")));
-  }, [form.watch("imagesUrl")]);
+    console.log("this is the form watch images", form.watch("images"));
+  }, [form.watch("images")]);
 
   const handleKeyPress = (
     e:
@@ -178,11 +163,36 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("this is hte sections  ", sections);
     const jsonDetails = JSON.stringify(sections);
-    const formValues = { ...values, jsonDetails };
+    const formValues = {
+      ...values,
+      jsonDetails,
+      id: id,
+    };
     console.log("Form values with JSON details:", formValues);
     console.log("this is the values from the form", values);
+
+    try {
+      await toast.promise(
+        createProductMutation.mutateAsync(formValues, {
+          onSuccess: (data) => {
+            console.log("Product created successfully:", data);
+            router.push("/products");
+          },
+          onError: (error) => {
+            console.error("Failed to create product:", error);
+            throw error; // Rethrow the error to be caught by toast.promise
+          },
+        }),
+        {
+          loading: "Creating product...",
+          success: "Product created successfully!",
+          error: (error) => `Failed to create product: ${error.message}`,
+        },
+      );
+    } catch (error) {
+      console.error("Failed to create product:", error);
+    }
   };
   const calculateDiscountedPrice = (
     price: number,
@@ -201,12 +211,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
       {initialData ? (
         <div className="flex items-center justify-between">
           <p className="text-heading2-bold">Edit Product</p>
-          <Delete id={initialData.id} item="product" />
+          {/* <Delete id={initialData.id} item="product" /> */}
         </div>
       ) : (
         <p className="text-heading2-bold">Create Product</p>
       )}
       <Separator className="mb-7 mt-4 bg-neutral-400" />
+      <DrawerDialogLoader open={createProductMutation.isPending} />
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -219,12 +230,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
               <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Title"
-                    {...field}
-                    className="max-w-lg"
-                    onKeyDown={handleKeyPress}
-                  />
+                  <>
+                    <Input
+                      placeholder="Title"
+                      {...field}
+                      className="max-w-lg"
+                      onKeyDown={handleKeyPress}
+                    />
+                    <div
+                      className={cn(
+                        "mt-1 max-w-[34rem] text-right text-sm",
+                        field.value.length > 80
+                          ? "text-red-500"
+                          : "text-gray-300",
+                      )}
+                    >
+                      {field.value.length}/80
+                    </div>
+                  </>
                 </FormControl>
                 <FormMessage className="text-red-1" />
               </FormItem>
@@ -237,37 +260,95 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  {/* <Textarea
-                    placeholder="Description"
-                    {...field}
-                    rows={5}
-                    onKeyDown={handleKeyPress}
-                  /> */}
-                  <AutosizeTextarea
-                    className="max-w-xl"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
+                  <>
+                    <AutosizeTextarea
+                      className="max-w-xl"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                      maxLength={500}
+                    />
+                    <div
+                      className={cn(
+                        "mt-1 max-w-[34rem] text-right text-sm",
+                        field.value.length > 500
+                          ? "text-red-500"
+                          : "text-gray-300",
+                      )}
+                    >
+                      {field.value.length}/500
+                    </div>
+                  </>
                 </FormControl>
                 <FormMessage className="text-red-1" />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="imagesUrl"
+            name="images"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Image</FormLabel>
                 <FormControl>
+                  {/* <ImageUpload
+                    value={field.value}
+                    onChange={(imageData) =>
+                      field.onChange([...field.value, imageData])
+                    }
+                    onRemove={(imageData) => {
+                      const removeImage = async () => {
+                        try {
+                          const result = await deleteProductImageAndFile(
+                            imageData.id,
+                          );
+                          return result;
+                        } finally {
+                          field.onChange([
+                            ...field.value.filter(
+                              (image) => image.id !== imageData.id,
+                            ),
+                          ]);
+                          // removeImageFromStorage(imageData.id);
+                        }
+                      };
+
+                      toast.promise(removeImage(), {
+                        loading: "Removing image...",
+                        success: (result) => result.message,
+                        error: (result) => result.message,
+                      });
+                    }}
+                    id={id}
+                  /> */}
                   <ImageUpload
                     value={field.value}
-                    onChange={(url) => field.onChange([...field.value, url])}
-                    onRemove={(url) =>
-                      field.onChange([
-                        ...field.value.filter((image) => image !== url),
-                      ])
+                    onChange={(imageData) =>
+                      field.onChange([...(field.value ?? []), imageData])
                     }
+                    onRemove={(imageData) => {
+                      const removeImage = async () => {
+                        try {
+                          const result = await deleteProductImageAndFile(
+                            imageData.id,
+                          );
+                          return result;
+                        } finally {
+                          field.onChange([
+                            ...(field.value ?? []).filter(
+                              (image) => image.id !== imageData.id,
+                            ),
+                          ]);
+                        }
+                      };
+
+                      toast.promise(removeImage(), {
+                        loading: "Removing image...",
+                        success: (result) => result.message,
+                        error: (result) => result.message,
+                      });
+                    }}
+                    id={id}
                   />
                 </FormControl>
                 <FormMessage className="text-red-1" />
@@ -353,7 +434,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
@@ -491,7 +572,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                             <Input
                               placeholder="Section Title"
                               value={section.title}
-                                  size={10}
+                              size={10}
                               onChange={(e) =>
                                 updateSectionTitle(sectionIndex, e.target.value)
                               }
@@ -567,7 +648,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
             />
           </div>
           {discountedPrice > 0 && (
-            <div className="rounded-md border border-orange-600  p-4 shadow-md">
+            <div className="mx-auto max-w-md  rounded-md border border-orange-600  p-4 shadow-md">
               <p className="mb-2 text-lg font-semibold">Price Details</p>
               <div className="space-y-1">
                 <p className="">
@@ -592,7 +673,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
             </div>
           )}
 
-          <div className="flex gap-10">
+          <div className="flex items-center justify-center gap-10">
             <Button type="submit" className="bg-orange-400 text-white">
               Submit
             </Button>

@@ -81,6 +81,12 @@
 //     })),
 // }));
 
+import {
+  ProductStatus,
+  ProductCategory,
+  ProductType,
+  ProductOwner,
+} from "@prisma/client";
 import { create } from "zustand";
 
 export type Section = {
@@ -161,4 +167,42 @@ export const useJsonDetailsStore = create<JsonDetailsStore>((set) => ({
           : section,
       ),
     })),
+}));
+
+export interface DataTableState {
+  search: string;
+  setSearch: (search: string) => void;
+  page: number;
+  setPage: (page: number) => void;
+  sort: string;
+  setSort: (sort: string) => void;
+  order: string;
+  setOrder: (order: string) => void;
+  statusFilter: ProductStatus | "";
+  setStatusFilter: (statusFilter: ProductStatus | "") => void;
+  categoryFilter: ProductCategory | "";
+  setCategoryFilter: (categoryFilter: ProductCategory | "") => void;
+  productTypeFilter: ProductType | "";
+  setProductTypeFilter: (productTypeFilter: ProductType | "") => void;
+  productOwnerFilter: ProductOwner | "";
+  setProductOwnerFilter: (productOwnerFilter: ProductOwner | "") => void;
+}
+
+export const useDataTableStore = create<DataTableState>((set) => ({
+  search: "",
+  setSearch: (search) => set({ search }),
+  page: 1,
+  setPage: (page) => set({ page }),
+  sort: "",
+  setSort: (sort) => set({ sort }),
+  order: "",
+  setOrder: (order) => set({ order }),
+  statusFilter: "",
+  setStatusFilter: (statusFilter) => set({ statusFilter }),
+  categoryFilter: "",
+  setCategoryFilter: (categoryFilter) => set({ categoryFilter }),
+  productTypeFilter: "",
+  setProductTypeFilter: (productTypeFilter) => set({ productTypeFilter }),
+  productOwnerFilter: "",
+  setProductOwnerFilter: (productOwnerFilter) => set({ productOwnerFilter }),
 }));

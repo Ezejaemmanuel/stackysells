@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import {
   RegisterLink,
   LoginLink,
+  LogoutLink,
 } from "@kinde-oss/kinde-auth-nextjs/components";
 import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
 
@@ -33,13 +34,19 @@ const AuthButtons = () => {
 
   // console.log("is he authenticated ", isUserAuthenticated);
   console.log("this is the user", user);
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <>
       {isAuthenticated ? (
-        <Link href="/dashboard" className="rounded-md border px-3 py-2">
-          Dashboard
-        </Link>
+        <>
+          <Link href="/dashboard" className="rounded-md border px-3 py-2">
+            Dashboard
+          </Link>
+          <LogoutLink postLogoutRedirectURL="/">LogOut</LogoutLink>
+        </>
       ) : (
         <>
           <LoginLink postLoginRedirectURL="/sync-user">

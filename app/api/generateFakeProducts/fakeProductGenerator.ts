@@ -5,6 +5,7 @@ import {
   ProductType,
   ProductStatus,
   Prisma,
+  ProductOwner,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
@@ -13,15 +14,21 @@ export async function createRandomProducts(userId: string) {
   const productTypes = Object.values(ProductType);
   const productStatuses = Object.values(ProductStatus);
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 30; i++) {
     const product = await prisma.product.create({
       data: {
         title: faker.commerce.productName(),
         description: faker.commerce.productDescription(),
-        imagesUrl: Array.from(
-          { length: faker.number.int({ min: 1, max: 5 }) },
-          () => faker.image.url(),
-        ),
+        images: {
+          create: Array.from(
+            { length: faker.number.int({ min: 1, max: 5 }) },
+            () => ({
+              id: faker.string.uuid(),
+              url: faker.image.url(),
+            }),
+          ),
+        },
+
         videoUrl: Array.from(
           { length: faker.number.int({ min: 0, max: 2 }) },
           () => faker.internet.url(),
@@ -34,6 +41,7 @@ export async function createRandomProducts(userId: string) {
         tags: Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () =>
           faker.lorem.word(),
         ),
+        productOwner: ProductOwner.admin,
         price: parseFloat(faker.commerce.price()),
         discountPercentage: faker.number.int({ min: 0, max: 50 }),
         productType: faker.helpers.arrayElement(productTypes),
