@@ -1,9 +1,11 @@
 // app/api/generate-products/route.ts
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 import { createRandomProducts } from "./fakeProductGenerator";
 import { getUserAuth } from "@/lib/auth/utils";
+import { users } from "@/lib/db/schema/all-schema";
+import { eq } from "drizzle-orm";
 
 interface Params {
   userId: string;
@@ -20,15 +22,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    });
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
 
-    if (!user) {
+    if (user.length === 0) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    await createRandomProducts(user.id);
+    await createRandomProducts(user[0].id);
 
     return NextResponse.json({
       message: "Random products generated successfully.",

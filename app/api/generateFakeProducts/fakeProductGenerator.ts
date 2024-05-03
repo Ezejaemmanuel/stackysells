@@ -1,62 +1,74 @@
 import { faker } from "@faker-js/faker";
+import { db } from "@/lib/db";
 import {
-  PrismaClient,
+  products,
+  productImages,
   ProductCategory,
   ProductType,
   ProductStatus,
-  Prisma,
   ProductOwner,
-} from "@prisma/client";
-import { prisma } from "@/lib/db";
+  ProductOwnerEnum,
+} from "@/lib/db/schema/all-schema";
+import { createId } from "@paralleldrive/cuid2";
 
 export async function createRandomProducts(userId: string) {
-  const productCategories = Object.values(ProductCategory);
-  const productTypes = Object.values(ProductType);
-  const productStatuses = Object.values(ProductStatus);
+  const productCategories = Object.values(ProductCategory.enumValues);
+  const productTypes = Object.values(ProductType.enumValues);
+  const productStatuses = Object.values(ProductStatus.enumValues);
 
   for (let i = 0; i < 30; i++) {
-    const product = await prisma.product.create({
-      data: {
-        title: faker.commerce.productName(),
-        description: faker.commerce.productDescription(),
-        images: {
-          create: Array.from(
-            { length: faker.number.int({ min: 1, max: 5 }) },
-            () => ({
-              id: faker.string.uuid(),
-              url: faker.image.url(),
-            }),
-          ),
-        },
+    const productId = createId();
 
-        videoUrl: Array.from(
-          { length: faker.number.int({ min: 0, max: 2 }) },
-          () => faker.internet.url(),
+    const images = Array.from(
+      { length: faker.number.int({ min: 1, max: 5 }) },
+      () => ({
+        id: createId(),
+        url: faker.image.url(),
+        productId,
+      }),
+    );
+
+    const product = {
+      id: productId,
+      title: faker.commerce.productName(),
+      description: faker.commerce.productDescription(),
+      videoUrl: JSON.stringify(
+        Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () =>
+          faker.internet.url(),
         ),
-        category: faker.helpers.arrayElement(productCategories),
-        categories: faker.helpers.arrayElements(productCategories, {
+      ),
+      category: faker.helpers.arrayElement(productCategories),
+      categories: JSON.stringify(
+        faker.helpers.arrayElements(productCategories, {
           min: 1,
           max: 3,
         }),
-        tags: Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () =>
+      ),
+      tags: JSON.stringify(
+        Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () =>
           faker.lorem.word(),
         ),
-        productOwner: ProductOwner.admin,
-        price: parseFloat(faker.commerce.price()),
-        discountPercentage: faker.number.int({ min: 0, max: 50 }),
-        productType: faker.helpers.arrayElement(productTypes),
-        jsonDetails: Array.from({ length: 5 }, () => ({
+      ),
+      productOwner: ProductOwnerEnum.admin,
+      price: parseFloat(faker.commerce.price()),
+      discountPercentage: faker.number.int({ min: 0, max: 50 }),
+      productType: faker.helpers.arrayElement(productTypes),
+      jsonDetails: JSON.stringify(
+        Array.from({ length: 5 }, () => ({
           title: faker.lorem.sentence(),
           shortDescriptions: Array.from(
             { length: faker.number.int({ min: 1, max: 5 }) },
             () => faker.lorem.sentence(),
           ),
         })),
-        status: faker.helpers.arrayElement(productStatuses),
-        userId,
-      },
-    });
+      ),
+      status: faker.helpers.arrayElement(productStatuses),
+      userId,
+    };
 
-    console.log(`Created product with id: ${product.id}`);
+    await db.insert(products).values(product);
+    await db.insert(productImages).values(images);
+
+    console.log(`Created product with id: ${productId}`);
   }
 }

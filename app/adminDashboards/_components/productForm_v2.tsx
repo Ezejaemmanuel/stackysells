@@ -22,12 +22,7 @@ import ImageUpload from "./image-uploader";
 // import MultiSelect from "./multi-select";
 import MultiText from "./multi-text";
 // import Delete from "./customUi-delete";
-import {
-  Product,
-  ProductCategory,
-  ProductStatus,
-  ProductType,
-} from "@prisma/client";
+
 import {
   Select,
   SelectContent,
@@ -35,6 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProductWithImages } from "@/app/api/oneProduct/aside";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import MultipleSelector from "@/components/ui/multipleSelector";
 import { AutosizeTextarea } from "@/components/ui/autoResizeTextArea";
@@ -45,6 +42,13 @@ import { toast } from "sonner";
 import { DrawerDialogLoader } from "@/components/custom-component/loading-drawer-alert";
 import { deleteProductImageAndFile } from "@/lib/uploadthing-functions/functions";
 import { cn } from "@/lib/utils";
+import {
+  Product,
+  ProductCategoryEnum,
+  ProductOwnerEnum,
+  ProductStatusEnum,
+  ProductTypeEnum,
+} from "@/lib/db/schema/all-schema";
 type Option = {
   label: string;
   value: string;
@@ -62,13 +66,13 @@ const formSchema = z.object({
   title: z.string().min(2).max(80),
   description: z.string().min(2).max(500).trim(),
   images: z.array(z.object({ url: z.string(), id: z.string() })),
-  category: z.nativeEnum(ProductCategory),
-  categories: z.array(z.nativeEnum(ProductCategory)),
+  category: z.nativeEnum( ProductCategoryEnum),
+  categories: z.array(z.nativeEnum(ProductCategoryEnum)),
   tags: z.array(z.string()),
   price: z.coerce.number().min(0.1),
   discountPercentage: z.coerce.number().min(0).max(100),
-  productType: z.nativeEnum(ProductType),
-  status: z.nativeEnum(ProductStatus),
+  productType: z.nativeEnum(ProductTypeEnum),
+  status: z.nativeEnum(ProductStatusEnum),
   jsonDetails: z.array(z.any()),
 });
 const initialDataJsonDetails: Section[] = [
@@ -91,9 +95,9 @@ const initialDataJsonDetails: Section[] = [
 ];
 
 interface ProductFormProps {
-  initialData: Product | null;
+  initialData: ProductWithImages | null;
 }
-const productCategories = Object.values(ProductCategory);
+const productCategories = Object.values(ProductCategoryEnum);
 const options: Option[] = productCategories.map((category) => ({
   label: category,
   value: category,
@@ -118,22 +122,41 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    //@ts-ignore
     defaultValues: initialData
       ? {
-          ...initialData,
+          title: initialData.title,
+          description: initialData.description,
+          status: initialData.status,
+          category: initialData.category,
+          categories: initialData.categories as (typeof ProductCategoryEnum)[],
+          tags: JSON.parse(initialData.tags as unknown as string),
+          price: initialData.price,
+          discountPercentage: initialData.discountPercentage,
+          productType: initialData.productType,
           jsonDetails: initialData.jsonDetails as unknown as Section[],
+          images: initialData.images,
+          createdAt: initialData.createdAt,
+          updatedAt: initialData.updatedAt,
+          wishlistedById: initialData.wishlistedById,
         }
       : {
           title: "",
           description: "",
-          status: ProductStatus.created,
-          category: ProductCategory.Clothing,
+          status: ProductStatusEnum.created,
+          category: ProductCategoryEnum.Clothing,
           categories: [],
           tags: [],
           price: 0.1,
           discountPercentage: 0,
-          productType: ProductType.goods,
+          productType: ProductTypeEnum.goods,
           jsonDetails: [],
+          images: [],
+          productOwner: ProductOwnerEnum.admin,
+          userId: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          wishlistedById: null,
         },
   });
   const { setSections } = useJsonDetailsStore();
@@ -423,7 +446,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.values(ProductCategory).map((category) => (
+                      {Object.values(ProductCategoryEnum).map((category) => (
                         <SelectItem key={category} value={category}>
                           {category}
                         </SelectItem>
@@ -450,7 +473,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.values(ProductStatus).map((status) => (
+                      {Object.values(ProductStatusEnum).map((status) => (
                         <SelectItem key={status} value={status}>
                           {status}
                         </SelectItem>
@@ -541,7 +564,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
                       defaultValue={field.value}
                       className="flex flex-col space-y-1"
                     >
-                      {Object.values(ProductType).map((type) => (
+                      {Object.values(ProductTypeEnum).map((type) => (
                         <FormItem
                           key={type}
                           className="flex items-center space-x-3 space-y-0"

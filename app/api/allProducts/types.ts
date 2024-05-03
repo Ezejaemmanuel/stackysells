@@ -1,10 +1,17 @@
+
+// import {
+//   Prisma,
+//   ProductCategory,
+//   ProductStatus,
+//   ProductType,
+//   ProductOwner,
+// } from "@prisma/client";
 import {
-  Prisma,
-  ProductCategory,
-  ProductStatus,
-  ProductType,
-  ProductOwner,
-} from "@prisma/client";
+  ProductStatusEnum,
+  ProductCategoryEnum,
+  ProductTypeEnum,
+  ProductOwnerEnum,
+} from "@/lib/db/schema/all-schema";
 
 export enum SortOption {
   TitleAsc = "titleAsc",
@@ -19,7 +26,7 @@ export interface ProductResponse {
   id: string;
   title: string;
   description: string;
-  category: ProductCategory[];
+  category: typeof ProductCategoryEnum[];
   tags: string[];
   price: number;
   createdAt: Date;
@@ -27,12 +34,12 @@ export interface ProductResponse {
   imagesUrl: string[];
   userId: string;
   videoUrl: string[];
-  categories: ProductCategory[];
+  categories:typeof ProductCategoryEnum[];
   discountPercentage: number;
   jsonDetails: any[];
-  productOwner: ProductOwner;
-  productType: ProductType;
-  status: ProductStatus;
+  productOwner:typeof ProductOwnerEnum;
+  productType:typeof ProductTypeEnum;
+  status:typeof ProductStatusEnum;
   wishlistedById: string | null;
 }
 

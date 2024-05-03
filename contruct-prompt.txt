@@ -1,0 +1,531 @@
+i want you to modify these prisma queries so that they would use drizzle instead of prisma and at the same time still going to do exactly the same thing 
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String    @id @unique @default(cuid())
+  role      UserRole
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  email     String    @unique
+  firstName String?
+  userName  String?
+  fullName  String?
+  imageUrl  String?
+  Order     Order[]
+  Products  Product[]
+  wishlist  Product[] @relation("Wishlist")
+}
+
+model Product {
+  id                 String            @id @unique @default(cuid())
+  title              String
+  description        String
+  category           ProductCategory
+  tags               String[]
+  price              Float
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  userId             String
+  videoUrl           String[]
+  categories         ProductCategory[]
+  discountPercentage Float
+  jsonDetails        Json[]
+  productOwner       ProductOwner
+  productType        ProductType
+  status             ProductStatus
+  wishlistedById     String?
+  OrderItem          OrderItem[]
+  User               User              @relation(fields: [userId], references: [id])
+  wishlistedBy       User?             @relation("Wishlist", fields: [wishlistedById], references: [id])
+  images             ProductImage[]
+}
+
+model ProductImage {
+  id        String  @id @unique
+  url       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id              String      @id @unique @default(cuid())
+  shippingAddress Json
+  userId          String
+  shippingRate    String
+  totalAmount     Float
+  User            User        @relation(fields: [userId], references: [id])
+  products        OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @unique @default(cuid())
+  productId String
+  color     String
+  size      String
+  quantity  Int
+  orderId   String?
+  Order     Order?  @relation(fields: [orderId], references: [id])
+  Product   Product @relation(fields: [productId], references: [id])
+}
+
+enum ProductCategory {
+  Clothing
+  Housing
+  Electronics
+  BeautyHealth
+  Sports
+  Toys
+  Books
+  Cleaning
+  Tutoring
+  Repair
+  PersonalTraining
+  Photography
+  Catering
+  EventPlanning
+}
+
+enum UserRole {
+  Buyer
+  OneTimeSeller
+  ContinuousSeller
+  Admin
+  SuperAdmin
+}
+
+enum ProductStatus {
+  created
+  onSale
+  soldOut
+  suspendedByAdmin
+  suspendedBySeller
+  shouldBeDeleted
+}
+
+enum ProductType {
+  goods
+  services
+}
+
+enum ProductOwner {
+  admin
+  permanentSellers
+}
+and 
+import { prisma } from "@/lib/db";
+import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import { redirect } from "next/navigation";
+import { createUser } from "@/app/sync-user/create-user";
+import { getUserAuth } from "@/lib/auth/utils";
+
+export async function POST(
+  request: NextRequest,
+  res: NextResponse,
+): Promise<NextResponse> {
+  console.log("POST function started");
+  const { session } = await getUserAuth();
+  try {
+    console.log("Attempting to authenticate user");
+    // const { userId } = auth();
+    console.log(`Authenticated user ID: ${session}`);
+    if (!session) {
+      console.log("No user ID found, redirecting to sign-in");
+      throw new Error("No user ID found, redirecting to sign-in page.");
+    }
+    console.log("Fetching user from database");
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+    console.log(`User fetched from database: ${JSON.stringify(user)}`);
+    if (user) {
+      console.log("User found, redirecting to user-dashboard");
+      return NextResponse.json(user, { status: 200 });
+    }
+    console.log("Creating user through webhook");
+    const fromSyncingUser = await createUser();
+    console.log(`User created: ${JSON.stringify(fromSyncingUser)}`);
+    console.log("Returning response with status 200");
+    return NextResponse.json(fromSyncingUser, { status: 200 });
+  } catch (error: unknown) {
+    console.log("An error occurred", error);
+    // Convert the error object to a string
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(`Error message: ${errorMessage}`);
+
+    console.log("Returning error response with status 500");
+    return NextResponse.json(
+      {
+        error:
+          "An unknown error occurred while updating the token price: " +
+          errorMessage,
+      },
+      { status: 500 },
+    );
+  }
+}
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
+import { getUserAuth } from "@/lib/auth/utils";
+import { UserRole } from "@prisma/client";
+
+export async function createUser() {
+  const { session } = await getUserAuth();
+  if (!session) {
+    redirect("/api/auth/login");
+  }
+  const { user } = session;
+  if (!user.email) {
+    throw new Error("email must be provied");
+  }
+  const AuthenticatedUser = await prisma.user.upsert({
+    where: { id: user.id },
+    create: {
+      id: user.id,
+      userName: user.userName,
+      firstName: user.firstName,
+      fullName: user.fullName,
+      email: user.email,
+      imageUrl: user.imageUrl,
+      role: UserRole.Buyer,
+    },
+    update: {
+      id: user.id,
+      userName: user.userName,
+      firstName: user.firstName,
+      fullName: user.fullName,
+      email: user.email,
+      imageUrl: user.imageUrl,
+    },
+  });
+
+  return AuthenticatedUser;
+}
+
+import {
+  pgTable,
+  text,
+  doublePrecision,
+  timestamp,
+  uniqueIndex,
+  jsonb,
+  pgEnum,
+  integer,
+} from "drizzle-orm/pg-core";
+import { createId } from "@paralleldrive/cuid2";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
+import { sql } from "drizzle-orm";
+
+export const UserRole = pgEnum("UserRole", [
+  "Buyer",
+  "OneTimeSeller",
+  "ContinuousSeller",
+  "Admin",
+  "SuperAdmin",
+]);
+export const UserRoleEnum = z.enum(UserRole.enumValues).Enum;
+
+export const ProductCategory = pgEnum("ProductCategory", [
+  "Clothing",
+  "Housing",
+  "Electronics",
+  "BeautyHealth",
+  "Sports",
+  "Toys",
+  "Books",
+  "Cleaning",
+  "Tutoring",
+  "Repair",
+  "PersonalTraining",
+  "Photography",
+  "Catering",
+  "EventPlanning",
+]);
+export const ProductCategoryEnum = z.enum(ProductCategory.enumValues).enum;
+
+export const ProductStatus = pgEnum("ProductStatus", [
+  "created",
+  "onSale",
+  "soldOut",
+  "suspendedByAdmin",
+  "suspendedBySeller",
+  "shouldBeDeleted",
+]);
+export const ProductStatusEnum = z.enum(ProductStatus.enumValues).enum;
+
+export const ProductType = pgEnum("ProductType", ["goods", "services"]);
+export const ProductTypeEnum = z.enum(ProductType.enumValues).enum;
+
+
+export const ProductOwner = pgEnum("ProductOwner", [
+  "admin",
+  "permanentSellers",
+]);
+export const ProductOwnerEnum = z.enum(ProductOwner.enumValues).Enum;
+
+export const users = pgTable(
+  "User",
+  {
+    id: text("id").primaryKey().default(createId()),
+    role: UserRole("role").notNull(),
+    createdAt: timestamp("createdAt")
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp("updatedAt")
+      .notNull()
+      .default(sql`now()`),
+    email: text("email").notNull(),
+    firstName: text("firstName"),
+    userName: text("userName"),
+    fullName: text("fullName"),
+    imageUrl: text("imageUrl"),
+  },
+  (users) => ({
+    emailIndex: uniqueIndex("User_email_key").on(users.email),
+  }),
+);
+
+export const products = pgTable("Product", {
+  id: text("id").primaryKey().default(createId()),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: ProductCategory("category").notNull(),
+  tags: jsonb("tags").notNull(),
+  price: doublePrecision("price").notNull(),
+  createdAt: timestamp("createdAt")
+    .notNull()
+    .default(sql`now()`),
+  updatedAt: timestamp("updatedAt")
+    .notNull()
+    .default(sql`now()`),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  videoUrl: jsonb("videoUrl").notNull(),
+  categories: jsonb("categories").notNull(),
+  discountPercentage: doublePrecision("discountPercentage").notNull(),
+  jsonDetails: jsonb("jsonDetails").notNull(),
+  productOwner: ProductOwner("productOwner").notNull(),
+  productType: ProductType("productType").notNull(),
+  status: ProductStatus("status").notNull(),
+  wishlistedById: text("wishlistedById").references(() => users.id),
+});
+
+export const productImages = pgTable("ProductImage", {
+  id: text("id").primaryKey().default(createId()),
+  url: text("url").notNull(),
+  productId: text("productId")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+});
+
+export const orders = pgTable("Order", {
+  id: text("id").primaryKey().default(createId()),
+  shippingAddress: jsonb("shippingAddress").notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  shippingRate: text("shippingRate").notNull(),
+  totalAmount: doublePrecision("totalAmount").notNull(),
+});
+
+export const orderItems = pgTable("OrderItem", {
+  id: text("id").primaryKey().default(createId()),
+  productId: text("productId")
+    .notNull()
+    .references(() => products.id),
+  color: text("color").notNull(),
+  size: text("size").notNull(),
+  quantity: integer("quantity").notNull(),
+  orderId: text("orderId").references(() => orders.id),
+});
+
+// Generate TypeScript types using Zod
+export const userSchema = createSelectSchema(users);
+export type User = z.infer<typeof userSchema>;
+
+export const productSchema = createSelectSchema(products);
+export type Product = z.infer<typeof productSchema>;
+
+export const productImageSchema = createSelectSchema(productImages);
+export type ProductImage = z.infer<typeof productImageSchema>;
+
+export const orderSchema = createSelectSchema(orders);
+export type Order = z.infer<typeof orderSchema>;
+
+export const orderItemSchema = createSelectSchema(orderItems);
+export type OrderItem = z.infer<typeof orderItemSchema>;
+example code 
+
+import { NextRequest, NextResponse } from "next/server";
+import { eq, ilike, or, and, asc, desc } from "drizzle-orm";
+import { SortOption } from "./types";
+import { CreateProductInput } from "@/lib/tenstack-hooks/useCreateProduct";
+import { getUserAuth } from "@/lib/auth/utils";
+import { products } from "@/lib/db/schema/all-schema";
+import { db } from "@/lib/db";
+import {
+  ProductStatusEnum,
+  ProductCategoryEnum,
+  ProductTypeEnum,
+  ProductOwnerEnum,
+} from "@/lib/db/schema/all-schema";
+
+export async function GET(req: NextRequest) {
+  console.log("Received GET request for products API");
+  const { searchParams } = req.nextUrl;
+  const page = searchParams.get("page") || "1";
+  const limit = searchParams.get("limit") || "10";
+  const sort =
+    (searchParams.get("sort") as SortOption) || SortOption.CreatedAtDesc;
+  const search = searchParams.get("search") || "";
+  const statusFilter = searchParams.get("statusFilter") || undefined;
+  const categoryFilter = searchParams.get("categoryFilter") || undefined;
+  const productTypeFilter = searchParams.get("productTypeFilter") || undefined;
+  const productOwnerFilter =
+    searchParams.get("productOwnerFilter") || undefined;
+
+  try {
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    console.log(
+      `Calculated pagination: pageNumber=${pageNumber}, pageSize=${pageSize}, skip=${skip}`,
+    );
+
+    let statusWhereCondition:
+      | (typeof ProductStatusEnum)[keyof typeof ProductStatusEnum]
+      | undefined;
+    if (statusFilter) {
+      statusWhereCondition =
+        ProductStatusEnum[statusFilter as keyof typeof ProductStatusEnum];
+    }
+
+    let categoryWhereCondition:
+      | (typeof ProductCategoryEnum)[keyof typeof ProductCategoryEnum]
+      | undefined;
+    if (categoryFilter) {
+      categoryWhereCondition =
+        ProductCategoryEnum[categoryFilter as keyof typeof ProductCategoryEnum];
+    }
+
+    let productTypeWhereCondition:
+      | (typeof ProductTypeEnum)[keyof typeof ProductTypeEnum]
+      | undefined;
+    if (productTypeFilter) {
+      productTypeWhereCondition =
+        ProductTypeEnum[productTypeFilter as keyof typeof ProductTypeEnum];
+    }
+
+    let productOwnerWhereCondition:
+      | (typeof ProductOwnerEnum)[keyof typeof ProductOwnerEnum]
+      | undefined;
+    if (productOwnerFilter) {
+      productOwnerWhereCondition =
+        ProductOwnerEnum[productOwnerFilter as keyof typeof ProductOwnerEnum];
+    }
+
+    let orderByClause;
+    switch (sort) {
+      case SortOption.TitleAsc:
+        orderByClause = asc(products.title);
+        break;
+      case SortOption.TitleDesc:
+        orderByClause = desc(products.title);
+        break;
+      case SortOption.PriceAsc:
+        orderByClause = asc(products.price);
+        break;
+      case SortOption.PriceDesc:
+        orderByClause = desc(products.price);
+        break;
+      case SortOption.CreatedAtAsc:
+        orderByClause = asc(products.updatedAt);
+        break;
+      case SortOption.CreatedAtDesc:
+        orderByClause = desc(products.updatedAt);
+        break;
+    }
+
+    console.log("Fetching products from database...");
+    const productsResult = await db
+      .select()
+      .from(products)
+      .where(
+        and(
+          or(
+            ilike(products.title, `%${search}%`),
+            ilike(products.description, `%${search}%`),
+          ),
+          statusWhereCondition
+            ? eq(products.status, statusWhereCondition)
+            : undefined,
+          categoryWhereCondition
+            ? eq(products.category, categoryWhereCondition)
+            : undefined,
+          productTypeWhereCondition
+            ? eq(products.productType, productTypeWhereCondition)
+            : undefined,
+          productOwnerWhereCondition
+            ? eq(products.productOwner, productOwnerWhereCondition)
+            : undefined,
+        ),
+      )
+      .limit(pageSize)
+      .offset(skip)
+      .orderBy(orderByClause);
+
+    console.log("Products fetched:", productsResult);
+
+    console.log("Counting total products using productsResult...");
+    const totalProducts = productsResult.length;
+
+    const totalPages = Math.ceil(totalProducts / pageSize);
+
+    return NextResponse.json({ products: productsResult, totalPages });
+  } catch (error) {
+    console.error("Error occurred while fetching products:", error);
+    let errorMessage = "";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = String(error);
+    }
+    console.log("Sending error response...");
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function DELETE(nextRequest: NextRequest) {
+  const { searchParams } = new URL(nextRequest.url);
+  const productId = searchParams.get("id");
+  console.log("Received DELETE request for product with ID:", productId);
+  if (!productId) {
+    return NextResponse.json(
+      { error: "Product ID is required" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await db.delete(products).where(eq(products.id, productId));
+
+    return NextResponse.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return NextResponse.json(
+      { error: "Failed to delete product" },
+      { status: 500 },
+    );
+  }
+}

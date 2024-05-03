@@ -1,0 +1,27 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1713055810013,
+      "tag": "0000_massive_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1713058405446,
+      "tag": "0001_daily_dakota_north",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1713058634847,
+      "tag": "0002_cultured_marten_broadcloak",
+      "breakpoints": true
+    }
+  ]
+}
